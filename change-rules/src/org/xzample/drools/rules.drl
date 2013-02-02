@@ -1,0 +1,40 @@
+import org.xzample.drools.*
+import java.util.Date
+
+rule "Change Severity"
+  dialect "mvel"
+  when
+      $event : Event( severity != 7, message == "webserver1 not available" )
+  then
+      println( "Current severity: " + $event.severity )
+      modify ( $event) { severity = 7 }
+end
+
+
+rule "Change Priority"
+  dialect "mvel"
+  no-loop
+  when
+      $event : Event( severity == 7, message == "webserver1 not available" )
+  then
+      println( "Current priority: " + $event.priority )
+      modify ( $event) { priority = 1 }
+end
+
+
+rule "Print Event"
+  dialect "mvel"
+  no-loop
+  when
+      $event : Event( severity == 7, priority == 1, message == "webserver1 not available" )
+  then
+      println("--- ---") 
+      println("Changed severity: " + $event.severity) 
+      println("Changed priority: " + $event.priority) 
+end
+
+
+
+function void println(String msg) {
+      System.out.println( new Date() + " --- " + msg);
+}
