@@ -1,0 +1,128 @@
+
+package org.opennms.netmgt.correlation.drools;
+
+import java.util.Date;
+
+import org.opennms.core.utils.InetAddressUtils;
+import org.opennms.netmgt.correlation.drools.DroolsCorrelationEngine;
+import org.opennms.netmgt.xml.event.Event;
+import org.opennms.netmgt.xml.event.Parms;
+import org.opennms.netmgt.xml.event.Parm;
+import org.opennms.netmgt.model.events.EventBuilder;
+import org.opennms.netmgt.EventConstants;
+import org.opennms.netmgt.capsd.EventUtils;
+import org.opennms.netmgt.correlation.drools.Affliction.Type;
+import org.drools.spi.KnowledgeHelper;
+
+global org.opennms.netmgt.correlation.drools.DroolsCorrelationEngine engine;
+
+declare Entity 
+    uei    : String
+    name   : String
+    counter: int   
+end
+
+rule "Create Entity"
+     salience 860 
+     no-loop
+     when
+         $event : Event($uei : uei, $descr : descr, $nodeid: nodeid )
+         not Entity(uei == $uei, name == $descr)
+     then
+         Entity entity = new Entity(); 
+         entity.setUei($uei);
+         entity.setName($descr);
+         entity.setCounter(1);
+         insert(entity);
+         println("---> Entity" + " uei: " +  entity.getUei() + " name: " + entity.getName() + " was inserted.");
+end
+
+rule "Send CarDirect Down Event"
+     salience 850 
+     no-loop
+     when
+         $event : Event( uei matches ".*down", $descr : descr matches ".*webserver[1-2]", $nodeid: nodeid )
+	 Entity(uei matches ".*down", name == "webserver1")
+	 Entity(uei matches ".*down", name == "webserver2")
+	 not Entity( uei matches ".*down", name == "carDirect")
+     then
+         sendEvent(engine,"uei.opennms.org/carDirect/down",$nodeid,"BusinessService","Drools","carDirect","Critical");
+         println("---> carDirect/down event was send.");
+end
+
+rule "Send CarDirect Up Event"
+     salience 840 
+     no-loop
+     when
+         $event : Event( uei matches ".*up", $descr : descr matches ".*webserver[1-2]", $nodeid: nodeid )
+         $entityWebserver : Entity( uei matches ".*down", name == $descr)
+	 $entityCarDirect : Entity( uei matches ".*down", name == "carDirect")
+     then
+         sendEvent(engine,"uei.opennms.org/carDirect/up",$nodeid,"BusinessService","Drools","carDirect","Normal");
+         println("---> carDirect/up event was send.");
+         retract($entityWebserver);
+         retract($entityCarDirect);
+end
+
+rule "Retract Webserver Down Entity"
+     salience 830 
+     no-loop
+     when
+         $event  : Event( uei matches ".*up", $descr : descr matches ".*webserver[1-2]", $nodeid: nodeid )
+         $entity : Entity($uei : uei matches ".*down", $name : name == $descr)
+	 not Entity(uei matches ".*down", name == "carDirect")
+     then
+         println("---> Entity" + " uei: " + $uei + " name: " + $name + " was retracted.");
+         retract($entity);
+end
+
+rule "Send Webserver Up Event"
+     salience 820 
+     no-loop
+     when
+         $event : Event( uei matches ".*down", $descr : descr matches ".*webserver[1-2]", $nodeid: nodeid )
+         $entityWebserverDown : Entity( uei matches ".*down", name == $descr)
+         $entityWebserverUp   : Entity( uei matches ".*up", name == $descr)
+     then
+         retract($entityWebserverDown);
+         retract($entityWebserverUp);
+         sendEvent(engine,"uei.opennms.org/webserver/up",$nodeid,"Http","sendevent.pl",$descr,"Normal");
+end
+
+rule "Drop Event"
+     salience 810 
+     when
+         $event : Event( $descr : descr )
+     then
+         println("---> Event: " + $descr + " was retracted.");
+         retract($event);
+end
+
+/*
+rule "Modify Entity"
+     salience 810 
+     no-loop
+     when
+         $event : Event( uei matches ".*down", $descr : descr, $nodeid: nodeid )
+	 $entity : Entity( $name : name == $descr, $counter : counter >= 1 )
+     then
+         modify($entity) { setCounter($counter + 1) }
+         println("---> Entity: " + $name + " was changed.");
+         retract($event);
+end
+*/
+
+function void println(Object msg) {
+	System.out.println(new Date() + " : " + msg);
+}
+
+function void sendEvent(DroolsCorrelationEngine engine,String uei, Long nodeId,  String svcName,String source, String subSource, String severity) {
+        EventBuilder bldr = new EventBuilder(uei,"Drools")
+           .setSeverity(severity)
+           .setNodeid(nodeId.intValue())
+           .setService(svcName)
+           .setDescription(subSource)
+           .addParam("source",source)
+           .addParam("subSource",subSource);
+        engine.sendEvent(bldr.getEvent());
+}

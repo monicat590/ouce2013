@@ -1,0 +1,39 @@
+
+package org.opennms.netmgt.correlation.drools;
+
+import java.util.Date;
+
+import org.opennms.core.utils.InetAddressUtils;
+import org.opennms.netmgt.correlation.drools.DroolsCorrelationEngine;
+import org.opennms.netmgt.xml.event.Event;
+import org.opennms.netmgt.model.events.EventBuilder;
+import org.opennms.netmgt.EventConstants;
+import org.opennms.netmgt.capsd.EventUtils;
+import org.opennms.netmgt.correlation.drools.Affliction.Type;
+import org.drools.spi.KnowledgeHelper;
+
+global org.opennms.netmgt.correlation.drools.DroolsCorrelationEngine engine;
+
+rule "Webserver Down"
+     salience 767
+     timer(cron:0/5 * * * * ?)
+     when
+         Event( uei matches ".*down", descr matches ".*carDirect", $nodeid: nodeid )
+     then
+         sendEvent(engine,"uei.opennms.org/carDirect/down",$nodeid,"BusinessService","CarDirect","Critical");
+         println("---> CarDirect Down Event");
+end
+
+function void println(Object msg) {
+	System.out.println(new Date() + " : " + msg);
+}
+
+function void sendEvent(DroolsCorrelationEngine engine,String uei, Long nodeId,  String svcName, String subSource, String severity) {
+        EventBuilder bldr = new EventBuilder(uei,"Drools")
+           .setSeverity(severity)
+           .setNodeid(nodeId.intValue())
+           .setService(svcName)
+           .addParam("source","Drools")
+           .addParam("subSource",subSource);
+        engine.sendEvent(bldr.getEvent());
+}
