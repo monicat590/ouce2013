@@ -20,7 +20,7 @@
     <global name="nodeService" type="org.opennms.netmgt.correlation.drools.NodeService" ref="nodeService" />
   </rule-set>
   <rule-set name="xzampleRules01">
-    <rule-file>/usr/share/opennms/etc/XzampleRules03.drl</rule-file>
+    <rule-file>/usr/share/opennms/etc/XzampleRules01.drl</rule-file>
     <event>uei.opennms.org/webserver/down</event>
     <event>uei.opennms.org/webserver/up</event>
     <event>uei.opennms.org/carDirect/down</event>
