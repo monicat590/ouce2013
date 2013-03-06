@@ -6,6 +6,8 @@ import java.util.Date;
 import org.opennms.core.utils.InetAddressUtils;
 import org.opennms.netmgt.correlation.drools.DroolsCorrelationEngine;
 import org.opennms.netmgt.xml.event.Event;
+import org.opennms.netmgt.xml.event.Parms;
+import org.opennms.netmgt.xml.event.Parm;
 import org.opennms.netmgt.model.events.EventBuilder;
 import org.opennms.netmgt.EventConstants;
 import org.opennms.netmgt.capsd.EventUtils;
@@ -14,26 +16,121 @@ import org.drools.spi.KnowledgeHelper;
 
 global org.opennms.netmgt.correlation.drools.DroolsCorrelationEngine engine;
 
-rule "Webserver Down"
-     salience 767
-     timer(cron:0/5 * * * * ?)
+/*
+ ******************************************
+ * Fact - Entity
+ ******************************************
+ */
+
+declare Entity 
+    uei    : String
+    name   : String
+    counter: int   
+end
+
+/*
+ ******************************************
+ * Count occurrence of the Entity
+ ******************************************
+ */
+
+rule "Count Entity"
+     salience 990 
+     no-loop
      when
-         Event( uei matches ".*down", descr matches ".*carDirect", $nodeid: nodeid )
+         $event  : Event( $uei : uei matches ".*start", $descr : descr, $nodeid: nodeid )
+	 $entity : Entity( $name : name == $descr, $counter : counter >= 0 )
      then
-         sendEvent(engine,"uei.opennms.org/carDirect/down",$nodeid,"BusinessService","CarDirect","Critical");
-         println("---> CarDirect Down Event");
+         println("---> Run 'Count Entity' Rule.");
+         modify($entity) { setCounter($counter + 1) }
+         println("---> entity uei: " +  $entity.getUei() + " counter: " + String.valueOf($entity.getCounter()) );
+         println("---> ");
+end
+
+rule "Create Entity"
+     salience 980 
+     no-loop
+     when
+         $event  : Event( $uei : uei matches ".*start", $descr : descr, $nodeid: nodeid )
+         not Entity(uei == $uei, name == $descr)
+     then
+         println("---> Run 'Create Entity' Rule.");
+         Entity entity = new Entity(); 
+         entity.setUei($uei);
+         entity.setName($descr);
+         entity.setCounter(0);
+         insert(entity);
+         println("---> Entity" + " uei: " +  entity.getUei() + " name: " + entity.getName() + " was inserted.");
+         println("---> ");
+end
+
+rule "Start DroolsTimer"
+     salience 970 
+     timer(cron:0/5 * * * * ?)
+     no-loop
+     when
+         $event  : Event( uei matches ".*start", $descr : descr matches ".*droolsTimer", $nodeid: nodeid )
+	 Entity( uei matches ".*start", name == $descr )
+     then
+         println("---> Run 'Start DroolsTimer' Rule");
+         sendEvent(engine,"uei.opennms.org/autoTask/run",$nodeid,"AutoTask","Drools","AutoTask","Warning");
+         println("---> '.../autoTask/run' event was send.");
+         println("--->");
+end
+
+rule "Stop DroolsTimer"
+     salience 960 
+     no-loop
+     when
+         $eventStop  : Event( uei matches ".*stop", $descr : descr matches ".*droolsTimer", $nodeid: nodeid )
+         $eventStart  : Event( uei matches ".*start", descr == $descr, nodeid == $nodeid )
+	 $entity : Entity(uei matches ".*start", name == $descr)
+     then
+         println("---> Run 'Stop DroolsTimer' Rule");
+         retract($eventStop);
+         println("---> Event with uei: " + $eventStop.getUei() + " was retracted.");
+         retract($eventStart);
+         println("---> Event with uei: " + $eventStart.getUei() + " was retracted.");
+         retract($entity);
+         println("---> Entity with uei: " + $entity.getUei() + " was retracted.");
+         println("--->");
+end
+
+
+rule "Drop AutoTask Event"
+     salience 950 
+     when
+         $event : Event( uei matches ".*run" )
+     then
+         println("---> Run 'Drop AutoTask Event' Rule.");
+         println("---> Event with uei: " + $event.getUei() + " was retracted.");
+         println("--->");
+         retract($event);
+end
+
+rule "Drop DroolsTimer Event" 
+     salience 940 
+     when 
+         $event  : Event( $uei : uei matches ".*start", $descr : descr )
+         $entity : Entity( uei == $uei, name == $descr, counter > 1 )
+     then
+         println("---> Run 'Drop DroolsTimer Event' Rule.");
+         println("---> Event with uei: " + $uei + " was retracted.");
+         println("--->");
+         retract($event);
 end
 
 function void println(Object msg) {
 	System.out.println(new Date() + " : " + msg);
 }
 
-function void sendEvent(DroolsCorrelationEngine engine,String uei, Long nodeId,  String svcName, String subSource, String severity) {
+function void sendEvent(DroolsCorrelationEngine engine,String uei, Long nodeId,  String svcName,String source, String subSource, String severity) {
         EventBuilder bldr = new EventBuilder(uei,"Drools")
            .setSeverity(severity)
            .setNodeid(nodeId.intValue())
            .setService(svcName)
-           .addParam("source","Drools")
+           .setDescription(subSource)
+           .addParam("source",source)
            .addParam("subSource",subSource);
         engine.sendEvent(bldr.getEvent());
 }
