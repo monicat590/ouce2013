@@ -21,9 +21,17 @@
   </rule-set>
   <rule-set name="xzampleRules01">
     <rule-file>/usr/share/opennms/etc/XzampleRules01.drl</rule-file>
+    <event>uei.opennms.org/drools/info</event>
     <event>uei.opennms.org/webserver/down</event>
     <event>uei.opennms.org/webserver/up</event>
     <event>uei.opennms.org/carDirect/down</event>
     <event>uei.opennms.org/carDirect/up</event>
+  </rule-set>
+  <rule-set name="xzampleRules02">
+    <rule-file>/usr/share/opennms/etc/XzampleRules02.drl</rule-file>
+    <event>uei.opennms.org/drools/info</event>
+    <event>uei.opennms.org/droolsTimer/start</event>
+    <event>uei.opennms.org/droolsTimer/stop</event>
+    <event>uei.opennms.org/autoTask/run</event>
   </rule-set>
 </engine-configuration>
