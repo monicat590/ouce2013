@@ -16,10 +16,35 @@ import org.drools.spi.KnowledgeHelper;
 
 global org.opennms.netmgt.correlation.drools.DroolsCorrelationEngine engine;
 
+/*
+ ******************************************
+ * Fact - Entity
+ ******************************************
+ */
+
 declare Entity 
     uei    : String
     name   : String
     counter: int   
+end
+
+/*
+ ******************************************
+ * Count occurrence of the Entity
+ ******************************************
+ */
+
+rule "Count Entity"
+     salience 870 
+     no-loop
+     when
+         $event  : Event( $uei : uei, $descr : descr, $nodeid: nodeid )
+	 $entity : Entity( $name : name == $descr, $counter : counter >= 0 )
+     then
+         println("---> Run 'Count Entity' Rule.");
+         modify($entity) { setCounter($counter + 1) }
+         println("---> entity uei: " +  $entity.getUei() + " counter: " + String.valueOf($entity.getCounter()) );
+         println("---> ");
 end
 
 rule "Create Entity"
@@ -29,12 +54,14 @@ rule "Create Entity"
          $event : Event($uei : uei, $descr : descr, $nodeid: nodeid )
          not Entity(uei == $uei, name == $descr)
      then
+         println("---> Run 'Create Entity' Rule.");
          Entity entity = new Entity(); 
          entity.setUei($uei);
          entity.setName($descr);
-         entity.setCounter(1);
+         entity.setCounter(0);
          insert(entity);
          println("---> Entity" + " uei: " +  entity.getUei() + " name: " + entity.getName() + " was inserted.");
+         println("---> ");
 end
 
 rule "Send CarDirect Down Event"
@@ -46,8 +73,10 @@ rule "Send CarDirect Down Event"
 	 Entity(uei matches ".*down", name == "webserver2")
 	 not Entity( uei matches ".*down", name == "carDirect")
      then
+         println("---> Run 'Send CarDirect Down Event' Rule");
          sendEvent(engine,"uei.opennms.org/carDirect/down",$nodeid,"BusinessService","Drools","carDirect","Critical");
-         println("---> carDirect/down event was send.");
+         println("---> .../carDirect/down event was send.");
+         println("--->");
 end
 
 rule "Send CarDirect Up Event"
@@ -58,10 +87,14 @@ rule "Send CarDirect Up Event"
          $entityWebserver : Entity( uei matches ".*down", name == $descr)
 	 $entityCarDirect : Entity( uei matches ".*down", name == "carDirect")
      then
+         println("---> Run 'Send CarDirect Up Event' Rule");
          sendEvent(engine,"uei.opennms.org/carDirect/up",$nodeid,"BusinessService","Drools","carDirect","Normal");
-         println("---> carDirect/up event was send.");
+         println("---> .../carDirect/up event was send.");
          retract($entityWebserver);
+         println("---> entity with uei: " + $entityWebserver.getUei() + " was retracted.");
          retract($entityCarDirect);
+         println("---> entity with uei: " + $entityCarDirect.getUei() + " was retracted.");
+         println("--->");
 end
 
 rule "Retract Webserver Down Entity"
@@ -72,21 +105,10 @@ rule "Retract Webserver Down Entity"
          $entity : Entity($uei : uei matches ".*down", $name : name == $descr)
 	 not Entity(uei matches ".*down", name == "carDirect")
      then
+         println("---> Run 'Retract Webserver Down Entity' Rule");
          println("---> Entity" + " uei: " + $uei + " name: " + $name + " was retracted.");
+         println("--->");
          retract($entity);
-end
-
-rule "Send Webserver Up Event"
-     salience 820 
-     no-loop
-     when
-         $event : Event( uei matches ".*down", $descr : descr matches ".*webserver[1-2]", $nodeid: nodeid )
-         $entityWebserverDown : Entity( uei matches ".*down", name == $descr)
-         $entityWebserverUp   : Entity( uei matches ".*up", name == $descr)
-     then
-         retract($entityWebserverDown);
-         retract($entityWebserverUp);
-         sendEvent(engine,"uei.opennms.org/webserver/up",$nodeid,"Http","sendevent.pl",$descr,"Normal");
 end
 
 rule "Drop Event"
@@ -94,23 +116,11 @@ rule "Drop Event"
      when
          $event : Event( $descr : descr )
      then
+         println("---> Run 'Drop Event' Rule.");
          println("---> Event: " + $descr + " was retracted.");
+         println("--->");
          retract($event);
 end
-
-/*
-rule "Modify Entity"
-     salience 810 
-     no-loop
-     when
-         $event : Event( uei matches ".*down", $descr : descr, $nodeid: nodeid )
-	 $entity : Entity( $name : name == $descr, $counter : counter >= 1 )
-     then
-         modify($entity) { setCounter($counter + 1) }
-         println("---> Entity: " + $name + " was changed.");
-         retract($event);
-end
-*/
 
 function void println(Object msg) {
 	System.out.println(new Date() + " : " + msg);
