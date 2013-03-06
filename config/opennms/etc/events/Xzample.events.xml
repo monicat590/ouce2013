@@ -1,5 +1,17 @@
 <events>
        <event>
+		<uei>uei.opennms.org/drools/info</uei>
+		<event-label>Drools Info</event-label>
+		<descr>
+			&lt;p&gt;%parm[subSource]%&lt;/p&gt;
+		</descr>
+		<logmsg dest='logndisplay'>
+			&lt;p&gt;SubSource: %parm[subSource]% / Source: %parm[source]%&lt;/p&gt;
+		</logmsg>
+		<severity>Normal</severity>
+       </event>
+
+       <event>
 		<uei>uei.opennms.org/webserver/down</uei>
 		<event-label>Webserver Down</event-label>
 		<descr>
@@ -57,5 +69,42 @@
 					auto-clean="true"/>
        </event>
 
+       <event>
+		<uei>uei.opennms.org/droolsTimer/start</uei>
+		<event-label>Start DroolsTimer</event-label>
+		<descr>
+			&lt;p&gt;%parm[subSource]%&lt;/p&gt;
+		</descr>
+		<logmsg dest='logndisplay'>
+			&lt;p&gt;SubSource: %parm[subSource]% / Source: %parm[source]%&lt;/p&gt;
+		</logmsg>
+		<severity>Warning</severity>
+		<alarm-data reduction-key="%uei%:%nodeid%:%service%:%parm[#1]%:%parm[#2]%" alarm-type="3" auto-clean="false" />
+       </event>
 
+       <event>
+		<uei>uei.opennms.org/droolsTimer/stop</uei>
+		<event-label>Stop DroolsTimer</event-label>
+		<descr>
+			&lt;p&gt;%parm[subSource]%&lt;/p&gt;
+		</descr>
+		<logmsg dest='logndisplay'>
+			&lt;p&gt;SubSource: %parm[subSource]% / Source: %parm[source]%&lt;/p&gt;
+		</logmsg>
+		<severity>Normal</severity>
+		<alarm-data reduction-key="%uei%:%nodeid%:%service%:%parm[#1]%:%parm[#2]%" alarm-type="3" auto-clean="false"/>
+       </event>
+
+       <event>
+		<uei>uei.opennms.org/autoTask/run</uei>
+		<event-label>Run AutoTask</event-label>
+		<descr>
+			&lt;p&gt;%parm[subSource]%&lt;/p&gt;
+		</descr>
+		<logmsg dest='logndisplay'>
+			&lt;p&gt;SubSource: %parm[subSource]% / Source: %parm[source]%&lt;/p&gt;
+		</logmsg>
+		<severity>Normal</severity>
+		<alarm-data reduction-key="%uei%:%nodeid%:%service%:%parm[#1]%:%parm[#2]%" alarm-type="3" auto-clean="false"/>
+       </event>
 </events>
