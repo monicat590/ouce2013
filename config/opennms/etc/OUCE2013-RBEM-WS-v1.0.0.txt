@@ -17,6 +17,7 @@
 #==============================
 # 1. SETUP YOUR ENV
 #==============================
+
 vi ~/.bashrc
 
 ##
@@ -30,13 +31,14 @@ PATH=$PATH:$OPENNMS_HOME/bin
 #==============================
 # 2. UPDATE OUCE2013 REPOSITORY
 #==============================
+
 cd ~/ouce2013
 git pull
 
 ##
 ## Open new terminal window
 ##
-cat OUCE2013-RBEM-WS-v1.0.0.txt | more
+cat ~/ouce2013/config/opennms/etc/OUCE2013-RBEM-WS-v1.0.0.txt | more
 
 #==============================
 # 3. OPEN THE WEB BROWSER (FIREFOX)
@@ -52,14 +54,10 @@ cat OUCE2013-RBEM-WS-v1.0.0.txt | more
 ## 2. http://localhost:8980/opennms/alarm/list
 ##
 
-##
-## Open new terminal window
-##
-cat OUCE2013-RBEM-WS-v1.0.0.txt | more
+#==============================
+# 4. NODE DISCOVERY
+#==============================
 
-#==============================
-# 3. NODE DISCOVERY
-#==============================
 send-event.pl -i 127.0.0.1 -s Discovery -p "nodelabel sun" uei.opennms.org/internal/capsd/addInterface -x 4
 
 ##
@@ -71,7 +69,7 @@ vi ~/.bashrc
 ##
 ## Add the following line(s)
 ##
-export NODEID="Your nodeId!!!"
+export NODEID=1 # <--- Your nodeid here!
 
 . ~/.bashrc
 
@@ -81,8 +79,9 @@ export NODEID="Your nodeId!!!"
 echo $NODEID
 
 #==============================
-# 4. ACTIVATE DROOLS
+# 5. ACTIVATE DROOLS
 #==============================
+
 sudo cp $OPENNMS_HOME/etc/examples/correlation-engine.xml $OPENNMS_HOME/etc
 sudo cp $OPENNMS_HOME/etc/examples/drools-engine.xml $OPENNMS_HOME/etc
 sudo cp $OPENNMS_HOME/etc/examples/LocationMonitorRules.drl $OPENNMS_HOME/etc
@@ -98,8 +97,9 @@ sudo service opennms restart
 tail -f $OPENNMS_HOME/logs/daemon/spring.log | grep 'drools-correlation-engine' 
 
 #==============================
-# 5. SIMPLE DROOLS RULE TEST
+# 6. SIMPLE DROOLS RULE TEST
 #==============================
+
 sudo cp ~/ouce2013/config/opennms/etc/events/Xzample.events.xml $OPENNMS_HOME/etc/events
 sudo cp ~/ouce2013/config/opennms/etc/eventconf.xml $OPENNMS_HOME/etc
 sudo cp ~/ouce2013/config/opennms/etc/NodeParentRules.drl $OPENNMS_HOME/etc
@@ -122,8 +122,9 @@ send-event.pl -n $NODEID -d "Status: 503" uei.opennms.org/nodes/nodeDown -x 4
 send-event.pl -n $NODEID -d "Status: 200" uei.opennms.org/nodes/nodeUp -x 3
 
 #==============================
-# 6. COMPLEX CORRELATION EXAMPLE
+# 7. COMPLEX CORRELATION EXAMPLE
 #==============================
+
 sudo cp ~/ouce2013/config/opennms/etc/drools-engine.xml  $OPENNMS_HOME/etc
 sudo cp ~/ouce2013/config/opennms/etc/XzampleRules01.drl $OPENNMS_HOME/etc
 sudo cp ~/ouce2013/config/opennms/etc/XzampleRules02.drl $OPENNMS_HOME/etc
@@ -131,7 +132,7 @@ sudo cp ~/ouce2013/config/opennms/etc/XzampleRules02.drl $OPENNMS_HOME/etc
 sudo service opennms restart
 
 ##
-## Open new terminal window
+## Open a new terminal window
 ##
 tail -f  $OPENNMS_HOME/logs/daemon/output.log | grep '\--->'
 
@@ -148,24 +149,24 @@ send-event.pl -n $NODEID -s Http -d "webserver1" -p "subSource webserver1" -p "s
 send-event.pl -n $NODEID -s Http -d "webserver2" -p "subSource webserver2" -p "source send-event.pl" uei.opennms.org/webserver/up -x 3
 
 #==============================
-# 7. AUTO EVENT EXAMPLE
+# 8. AUTO EVENT EXAMPLE
 #==============================
 
 ##
-## Open new terminal window
+## Open a new terminal window
 ##
 tail -f $OPENNMS_HOME/logs/daemon/output.log | grep '\--->'
 
-$OPENNMS_HOME/bin/send-event.pl -n $NODEID -s autoTask -d "droolsTimer" -p "subSource drools" -p "source send-event.pl" uei.opennms.org/droolsTimer/start -x 4
+send-event.pl -n $NODEID -s autoTask -d "droolsTimer" -p "subSource drools" -p "source send-event.pl" uei.opennms.org/droolsTimer/start -x 4
 
-$OPENNMS_HOME/bin/send-event.pl -n $NODEID -s autoTask -d "droolsTimer" -p "subSource drools" -p "source send-event.pl" uei.opennms.org/droolsTimer/stop -x 4
+send-event.pl -n $NODEID -s autoTask -d "droolsTimer" -p "subSource drools" -p "source send-event.pl" uei.opennms.org/droolsTimer/stop -x 4
 
 #==============================
-# 8. DROOLS WITH GROOVY
+# 9. DROOLS WITH GROOVY
 #==============================
 
 ##
-## Open new terminal window
+## Open a new terminal window
 ##
 cd ~/ouce2013/groovy/non-gradle
 ./change-rules.sh
