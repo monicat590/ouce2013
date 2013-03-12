@@ -9,7 +9,7 @@
 #    Workshop 2013-03-12
 #    Runbook
 #    Author: Markus Schneider
-#    https://gist.github.com/m-schneider/a44de80796e63a74479d#file-ouce2013-rbem-ws-runbook
+#    https://gist.github.com/m-schneider/5143591#file-ouce2013-rbem-ws-runbook 
 #
 ############################################################
 
