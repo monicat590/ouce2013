@@ -38,7 +38,7 @@ git pull
 ##
 ## Open new terminal window
 ##
-cat ~/ouce2013/config/opennms/etc/OUCE2013-RBEM-WS-v1.0.0.txt | more
+cat ~/ouce2013/config/opennms/etc/OUCE2013-RBEM-WS-RUNBOOK.txt | more
 
 #==============================
 # 3. OPEN THE WEB BROWSER (FIREFOX)
